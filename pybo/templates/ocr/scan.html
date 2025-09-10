@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block content %}
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>카메라 OCR 테스트</title>
+  <style>
+    #camera { width: 100%; height: auto; }
+    #result { margin-top: 20px; font-size: 18px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>카메라 OCR 테스트</h1>
+  <video id="camera" autoplay playsinline muted></video>
+  <canvas id="snapshot" style="display:none;"></canvas>
+  <div id="result">인식된 글자: (대기중)</div>
+
+  <script>
+    async function startCamera() {
+      const video = document.getElementById("camera");
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: "environment" } 
+        });
+        video.srcObject = stream;
+        alert("카메라 스트림 연결 완료");
+
+        // 3초마다 캡쳐 → Flask로 전송
+        setInterval(() => {
+          alert("캡처 시도");
+          captureAndSend(video);
+        }, 3000);
+      } catch (err) {
+        alert("카메라 접근 실패: " + err.message);
+      }
+    }
+
+    async function captureAndSend(video) {
+      const canvas = document.getElementById("snapshot");
+      const context = canvas.getContext("2d");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      alert("이미지 캡처 완료");
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          alert("Blob 생성 실패");
+          return;
+        }
+        alert("Blob 생성됨: " + blob.size + " bytes");
+
+        const formData = new FormData();
+        formData.append("file", blob, "frame.png");
+        alert("FormData 준비 완료");
+
+        try {
+          alert("서버로 전송 시작");
+          const res = await fetch("/ocr", {
+            method: "POST",
+            body: formData
+          });
+
+          alert("서버 응답 상태: " + res.status);
+
+          if (!res.ok) {
+            throw new Error("서버 오류: " + res.status);
+          }
+
+          const data = await res.json();
+          alert("서버 응답 데이터: " + JSON.stringify(data));
+
+          document.getElementById("result").innerText = 
+            "인식된 글자: " + (data.text || "(없음)");
+
+        } catch (err) {
+          alert("OCR 요청 실패: " + err.message);
+        }
+      }, "image/png");
+    }
+
+    // 실행 시작
+    startCamera();
+  </script>
+</body>
+</html>
+
+
+{% endblock %}

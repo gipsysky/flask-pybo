@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>OCR 테스트</title>
+</head>
+<body>
+    <h1>EasyOCR 결과</h1>
+
+    <form method="post" enctype="multipart/form-data">
+        <input type="file" name="file" required>
+        <button type="submit">OCR 실행</button>
+    </form>
+
+    {% if results %}
+        <h2>인식된 글자:</h2>
+        <ul>
+            {% for t in results %}
+                <li>{{ t }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</body>
+</html>
